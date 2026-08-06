@@ -1,0 +1,4 @@
+interface:
+  display_name: "中日音频转写与还原"
+  short_description: "本地转写中文独白或日文对话，并生成中文总结与详细还原"
+  default_prompt: "Use $local-audio-transcription to transcribe this audio locally and produce the appropriate Chinese deliverable."
