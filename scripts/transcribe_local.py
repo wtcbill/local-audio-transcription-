@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Reliable local transcription helper for Chinese monologues and Japanese dialogue."""
+"""Local transcription helper for Chinese monologues, Japanese dialogue and lectures."""
 
 import argparse
 import json
@@ -205,7 +205,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--audio", required=True, help="Input audio path.")
     parser.add_argument("--out-dir", help="Output directory; defaults to the audio file's directory.")
     parser.add_argument(
-        "--mode", choices=("auto", "zh-monologue", "ja-dialogue"), default="auto",
+        "--mode", choices=("auto", "zh-monologue", "ja-dialogue", "ja-lecture"), default="auto",
         help="Preset language and output intent."
     )
     parser.add_argument("--model", default="medium", help="Whisper model name or local model path.")
@@ -239,7 +239,7 @@ def main() -> int:
 
     language = args.language
     if language is None:
-        language = {"zh-monologue": "zh", "ja-dialogue": "ja"}.get(args.mode, "auto")
+        language = {"zh-monologue": "zh", "ja-dialogue": "ja", "ja-lecture": "ja"}.get(args.mode, "auto")
     if args.inspect_only:
         print(json.dumps({"audio": str(audio), "ffmpeg": ffmpeg, "ffprobe": ffprobe, "inspection": source_info}, ensure_ascii=False, indent=2))
         return 0

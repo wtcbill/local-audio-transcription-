@@ -1,4 +1,4 @@
 interface:
   display_name: "中日音频转写与还原"
-  short_description: "本地转写中文独白或日文对话，并生成中文总结与详细还原"
+  short_description: "本地转写中文想法、日文师生对话与课堂录音，生成忠实整理、中文还原与复习笔记"
   default_prompt: "Use $local-audio-transcription to transcribe this audio locally and produce the appropriate Chinese deliverable."

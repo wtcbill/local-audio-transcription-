@@ -1,9 +1,10 @@
 # Local Audio Transcription Skill
 
-一个面向 Codex 的本地音频转写 skill，使用 `faster-whisper` 在用户机器上完成语音识别，并针对中文用户提供两种主要工作模式：
+一个面向 Codex 的本地音频转写 skill，使用 `faster-whisper` 在用户机器上完成语音识别，并针对中文用户提供三种主要工作模式：
 
-- 中文独白：完整转写、可读整理、内容总结、要点与待办。
-- 日文对话：日文转写、中文翻译、详细聊天过程、老师意见、决定与待办。
+- 中文个人表述（`zh-monologue`）：忠实保留自己的观点、想法、理由和语气，交付完整整理稿、要点与结论、明确提出的待办。
+- 日文师生对话（`ja-dialogue`）：日中对照转写、按顺序的中文对话还原、老师反馈、决定与待办。
+- 日文单人授课（`ja-lecture`）：按授课顺序的日中对照转写、分主题课堂笔记、术语、例子和老师明确强调的重点。
 
 它特别适合个人语音记录、毕业设计讨论、研究指导、课堂录音和师生面谈。
 
@@ -21,21 +22,19 @@
 
 ## 仓库结构
 
-推荐使用下面的发布结构，让仓库文档与可安装 skill 保持分离：
+本仓库的 skill 位于根目录：
 
 ```text
 repository-root/
 ├── README.md
-└── skill/
-    └── local-audio-transcription/
-        ├── SKILL.md
-        ├── agents/
-        │   └── openai.yaml
-        └── scripts/
-            └── transcribe_local.py
+├── SKILL.md
+├── agents/
+│   └── openai.yaml
+└── scripts/
+    └── transcribe_local.py
 ```
 
-安装时只需要复制 `skill/local-audio-transcription` 目录，不需要把仓库的 README 一起复制到 Codex skills 目录。
+安装时只需要复制 `SKILL.md`、`agents/` 和 `scripts/`，不需要复制 README 和 Git 元数据。三类场景的正式交付规则见 [SKILL.md](SKILL.md)。
 
 ## 环境要求
 
@@ -80,13 +79,16 @@ python -m pip install faster-whisper
 Windows：
 
 ```powershell
-Copy-Item -Recurse -LiteralPath '.\skill\local-audio-transcription' -Destination "$env:USERPROFILE\.codex\skills\local-audio-transcription"
+$skillDestination = Join-Path $env:USERPROFILE '.codex\skills\local-audio-transcription'
+New-Item -ItemType Directory -Force -Path $skillDestination | Out-Null
+Copy-Item -Recurse -LiteralPath '.\SKILL.md', '.\agents', '.\scripts' -Destination $skillDestination
 ```
 
 macOS 或 Linux：
 
 ```bash
-cp -R ./skill/local-audio-transcription ~/.codex/skills/local-audio-transcription
+mkdir -p ~/.codex/skills/local-audio-transcription
+cp -R ./SKILL.md ./agents ./scripts ~/.codex/skills/local-audio-transcription/
 ```
 
 重新打开 Codex 任务后，可以通过 `$local-audio-transcription` 显式调用，也可以直接用自然语言描述音频任务。
@@ -115,6 +117,8 @@ cp -R ./skill/local-audio-transcription ~/.codex/skills/local-audio-transcriptio
 4. 待办事项
 5. 带时间戳的不确定内容
 
+整理稿保留你的立场、犹豫、语气和有意义的自我修正，不补写你没有说过的观点，也不把试探性的想法改成确定结论。
+
 ### 场景二：日文师生对话
 
 ```text
@@ -132,6 +136,23 @@ cp -R ./skill/local-audio-transcription ~/.codex/skills/local-audio-transcriptio
 
 这里的目标不是只给一段简短摘要，而是保留问题、回答、纠正、举例、态度变化和行动安排，使用户能够用中文重新讲述整段对话。
 
+### 场景三：日文单人授课
+
+```text
+这是日文上课录音，主要是老师一个人讲课。请按授课顺序转写并翻译成中文，再整理成方便复习的课堂笔记，保留概念、推理和例子，听不清处标出时间。
+```
+
+预期得到：
+
+1. 课程概述
+2. 按授课顺序、带时间戳的完整日中对照转写
+3. 分主题课堂笔记
+4. 日中术语、定义、例子和老师明确强调的重点
+5. 录音中提到的作业、安排与待确认事项
+6. 听不清或理解不确定的内容
+
+课堂笔记区分老师实际说过的内容与整理归纳，保留论证步骤、条件、数字和重要公式。课堂中短暂的问答也要保留；无法从录音确认的板书、图表或幻灯片内容应标注缺失，不能猜补。
+
 ## 手动运行转写脚本
 
 Codex 通常会自动运行脚本。需要调试或单独使用转写器时，也可以手动执行。
@@ -140,7 +161,7 @@ Codex 通常会自动运行脚本。需要调试或单独使用转写器时，�
 
 ```powershell
 & '.\.venv-whisper\Scripts\python.exe' `
-  '.\skill\local-audio-transcription\scripts\transcribe_local.py' `
+  '.\scripts\transcribe_local.py' `
   --audio 'D:\audio\my-note.m4a' `
   --out-dir 'D:\audio\output' `
   --mode zh-monologue `
@@ -151,10 +172,21 @@ Codex 通常会自动运行脚本。需要调试或单独使用转写器时，�
 
 ```powershell
 & '.\.venv-whisper\Scripts\python.exe' `
-  '.\skill\local-audio-transcription\scripts\transcribe_local.py' `
+  '.\scripts\transcribe_local.py' `
   --audio 'D:\audio\teacher-meeting.m4a' `
   --out-dir 'D:\audio\output' `
   --mode ja-dialogue `
+  --model medium
+```
+
+### 日文单人授课
+
+```powershell
+& '.\.venv-whisper\Scripts\python.exe' `
+  '.\scripts\transcribe_local.py' `
+  --audio 'D:\audio\lecture.m4a' `
+  --out-dir 'D:\audio\output' `
+  --mode ja-lecture `
   --model medium
 ```
 
@@ -164,6 +196,7 @@ Codex 通常会自动运行脚本。需要调试或单独使用转写器时，�
 |---|---|
 | `--mode zh-monologue` | 固定按中文独白识别 |
 | `--mode ja-dialogue` | 固定按日文对话识别 |
+| `--mode ja-lecture` | 固定使用日文识别，标记为课堂录音 |
 | `--model small` | 更快的草稿转写 |
 | `--model medium` | 更适合重要的中文或日文录音 |
 | `--initial-prompt "姓名, 专业术语"` | 提示可能出现的人名和术语 |
@@ -196,6 +229,7 @@ AI 应另外生成整理结果：
 ```text
 <run-name>_中文整理.md
 <run-name>_日文对话中文还原.md
+<run-name>_日文课堂中文整理.md
 ```
 
 不要用整理稿覆盖 `.txt` 或 `.json` 原始证据。
@@ -208,8 +242,9 @@ AI 应另外生成整理结果：
 
 - 用户自己的全中文录音：使用 `zh-monologue`。
 - 用户与老师的日文对话：使用 `ja-dialogue`。
+- 日文单人讲述或主要由老师讲解的课堂录音：使用 `ja-lecture`，保留其中短暂的问答。
 - 用户已经说清楚场景时，不要再次要求其选择模式。
-- 场景确实不明时才使用 `auto`，并根据识别结果决定交付格式。
+- 场景确实不明时才使用 `auto`，结合用户上下文和讲话结构决定交付格式；不能仅凭检测到日文就认定为对话。
 
 ### 2. 保证音频隐私
 
@@ -230,7 +265,7 @@ AI 应另外生成整理结果：
   '<skill-dir>\scripts\transcribe_local.py' `
   --audio '<audio-path>' `
   --out-dir '<output-dir>' `
-  --mode '<zh-monologue-or-ja-dialogue>' `
+  --mode '<zh-monologue-or-ja-dialogue-or-ja-lecture>' `
   --model medium
 ```
 
@@ -257,6 +292,8 @@ AI 应另外生成整理结果：
 
 整理时可以去除不影响意思的口头填充词，但必须保留原本的观点、因果关系、否定、数字、日期和要求。短录音应优先完整呈现整理稿，再给摘要。
 
+保留用户的语气、立场、犹豫和自我修正，不擅自扩写观点或把不确定的想法写成确定结论。
+
 ### 6. 日文对话的交付格式
 
 至少包含：
@@ -279,7 +316,13 @@ AI 应另外生成整理结果：
 
 翻译应忠实表达原意。重要专业词可以在中文后保留日文原词，不得把原本没有说过的建议添加到老师名下。
 
-### 7. 谨慎处理说话者
+### 7. 日文课堂的交付格式
+
+按照 [SKILL.md 中的 Japanese lecture 交付规则](SKILL.md#delivery-contract-japanese-lecture) 生成日文课堂中文整理稿。完整日中对照按授课顺序保留，复习笔记另外按主题组织；保留概念解释、论证步骤、例子和短暂问答，并区分老师原话与整理归纳。
+
+只有录音中明确强调的内容才标为老师强调的重点；作业与截止时间也必须有依据。笔记不能替代完整转写与翻译。
+
+### 8. 谨慎处理说话者
 
 本 skill 默认不做严格的声纹分离。AI 只能根据称呼、敬语、内容、轮次和上下文推断角色。
 
@@ -287,7 +330,7 @@ AI 应另外生成整理结果：
 - 证据不足时：使用 `说话者A`、`说话者B`。
 - 不得声称已经进行了真实的声纹识别或精确 diarization。
 
-### 8. 交付前复核
+### 9. 交付前复核
 
 重点核对：
 
@@ -297,6 +340,8 @@ AI 应另外生成整理结果：
 - 谁提出了什么要求；
 - 老师的意见与用户自己的想法是否混淆；
 - 中文还原是否包含足够细节；
+- 中文个人表述的立场与确定程度是否被改动；
+- 课堂概念、条件、例子、重要公式与作业是否保留，笔记归纳是否与老师原话区分；
 - 不确定内容是否已经明确标注。
 
 最后同时链接原始转写文件和整理后的 Markdown 文件，并说明角色标签是否为推断、是否仍有重要片段无法确认。
